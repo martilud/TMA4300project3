@@ -1,0 +1,38 @@
+---
+title: "TMA4300 Project 3"
+author: "Martin"
+date: "March 25, 2019"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(data.table)
+```
+
+## B
+
+
+```{r}
+bilirubin <- read.table("bilirubin.txt",header=T)
+boxplot(log(meas)~pers, data = bilirubin, main = "Logratihm of concentrations")
+linearmodel = lm(log(meas)~pers, data = bilirubin)
+summary(linearmodel)
+Fval = summary(linearmodel)$fstatistic[1] # Value of F-statistic
+Fval
+n1 = 11; n2 = 10; n3 = 8; n = n1 + n2 + n3
+permTest <- function(){
+  permbilirubin = copy(bilirubin)
+  permbilirubin$meas = sample(bilirubin$meas,n, replace = F)
+  linearmodel = lm(log(meas)~pers, data = permbilirubin)
+  return(summary(linearmodel)$fstatistic[1])
+}
+B = 999
+results = replicate(B,permTest())
+results
+newp = length(which(results >= Fval))/B
+newp
+```
+
+
+## C

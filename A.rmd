@@ -1,0 +1,75 @@
+---
+title: "Problem A"
+author: "Sivert Selnes"
+date: "March 28, 2019"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+source("probAhelp.R")
+source("probAdata.R")
+```
+
+
+```{r}
+ts = data3A$x # fetch time series
+n = length(ts)
+
+beta_estimates = ARp.beta.est(ts,2) # get AR(2) parameters estimates
+residuals_LS = ARp.resid(ts, beta_estimates$LS) 
+residuals_LA = ARp.resid(ts, beta_estimates$LA) 
+
+responses_LS = ts[3:n] - residuals_LS 
+responses_LA = ts[3:n] - residuals_LA 
+
+
+plot(ts)
+plot(responses_LS)
+plot(responses_LA)
+
+#plot(residuals_LS)
+#plot(residuals_LA)
+```
+
+### 1)
+The residual bootstrap method is a resampling method that relies on independent and identically distributed residuals to resample. Hence the assumption is that our data origins from a autoregressive process of second order, and the rediduals will therefore by i.i.d. and appropriate to resample.
+
+Then we sample a bootstrap set of residuals, making sure we sample the 
+
+```{r}
+# sample bootstrap set of residuals
+B = 1
+residuals = residuals_LA
+responses = responses_LA
+index = sample(1:n,n*B,replace = T)
+res_boot = matrix(residuals[index], B, n)
+
+# evt
+sample(residuals, size=n-2, replace=TRUE)
+
+
+# generate bootstrap set of pseudo responses
+pseudo = responses + res_boot[3:n]
+
+# fit new AR(2) to the bootstrapped pseduos
+beta_estimate = ARp.beta.est(pseudo,2) # get AR(2) parameters estimates
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

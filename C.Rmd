@@ -5,6 +5,31 @@ date: "April 2, 2019"
 output: pdf_document
 ---
 
+\newcommand{\vect}[1]{\boldsymbol{\mathbf{#1}}}
+\newcommand{\matr}[1]{\boldsymbol{\mathbf{#1}}} 
+
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
+
+
+# Problem C
+## 1.
+The log-likelihood function for the complete data $(x_i, y_i), i = 1,...,n$ is based on the directly inaccessible data points that are "latent" or in some way not observed. Given these, the log-likelihood can be maximized to yield the most likely distribution parameters. We known their respective distribution,
+
+$$
+\begin{aligned}
+x_i &\sim \text{exp}(\lambda_0) = \lambda_1 e^{-y_i\lambda_1}, \\
+y_i &\sim \text{exp}(\lambda_1) = \lambda_1 e^{-y_i\lambda_1}.
+\end{aligned}
+$$
+
+In addition they are indepentent of each other which means the each data pair can be written as a product, and the likelihood of the joint distribution is just the product of each pair since they are iid.:
+
+$$
+\begin{aligned}
+(x_i, y_i) &\sim  \lambda_0 \lambda_1e^{-x_i\lambda_0-y_i\lambda_1}, \\
+L(\lambda_0, +lambda_1|\vect{x}, \vect{y}) &= \prod_{i=1}^n \lambda_0 \lambda_1e^{-x_i\lambda_0-y_i\lambda_1}, \\
+\mathit{l}((\lambda_0, \lambda_1|\vect{x}, \vect{y})) &= \sum_{i=1}^n (log(\lambda_0 \lambda_1) -x_i\lambda_0 - y_i\lambda_1).
+\end{aligned}
+$$

@@ -29,7 +29,35 @@ In addition they are indepentent of each other which means the each data pair ca
 $$
 \begin{aligned}
 (x_i, y_i) &\sim  \lambda_0 \lambda_1e^{-x_i\lambda_0-y_i\lambda_1}, \\
-L(\lambda_0, +lambda_1|\vect{x}, \vect{y}) &= \prod_{i=1}^n \lambda_0 \lambda_1e^{-x_i\lambda_0-y_i\lambda_1}, \\
-\mathit{l}((\lambda_0, \lambda_1|\vect{x}, \vect{y})) &= \sum_{i=1}^n (log(\lambda_0 \lambda_1) -x_i\lambda_0 - y_i\lambda_1).
+f(\vect{x}, \vect{y}|\lambda_0, \lambda_1) &= \prod_{i=1}^n \lambda_0 \lambda_1e^{-x_i\lambda_0-y_i\lambda_1}, \\
+ln f(\vect{x}, \vect{y})|\lambda_0, \lambda_1) &= \sum_{i=1}^n (log(\lambda_0 \lambda_1) -x_i\lambda_0 - y_i\lambda_1).
 \end{aligned}
 $$
+
+In the setting where the $x_i, y_i$ are unobserved, this is of course impossible to maximize since the data is not really known. We do however observe 
+
+$$
+z_i = \text{max}(x_i,y_i) \quad \text{for}  i= 1,...,n
+$$
+and
+$$
+u_i = \text{I}(x_i \geq y_i) \quad \text{for}  i= 1,...,n.
+$$
+
+By conditioning on $z_i$ and $u_i$ (which is all that we really know) and assuming we know some values for the parameters as well $\lambda_0, lambda_1$, we can compute the expected value of the resulting log-likelihood:
+
+$$
+\begin{aligned}
+E[ln f(x,y|z,u,\lambda_0^t, \lambda_1^t)] &= E[\sum_{i=1}^n (log(\lambda_0 \lambda_1) -x_i\lambda_0 - y_i\lambda_1)]  \\
+&= \sum_{i=1}^n E[(log(\lambda_0^t \lambda_1^t)] -\sum_{i=1}^n E[ x_i\lambda_0^t] - \sum_{i=1}^n E[ y_i\lambda_1^t)]  \\
+&= \frac{1}{n}log(\lambda_0^t \lambda_1^t) -\sum_{i=1}^n [z_i u_i \lambda_0^t + E[\lambda_0 exp(x_i\lambda_0)/(1-e^{-\lambda z_i})]]- \sum_{i=1}^n E[ y_i\lambda_1^t)\\
+\end{aligned}n\
+$$
+
+
+
+
+
+
+
+

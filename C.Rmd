@@ -15,45 +15,58 @@ knitr::opts_chunk$set(echo = TRUE)
 
 # Problem C
 ## 1.
-The log-likelihood function for the complete data $(x_i, y_i), i = 1,...,n$ is based on the directly inaccessible data points that are "latent" or in some way not observed. Given these, the log-likelihood can be maximized to yield the most likely distribution parameters. We known their respective distribution,
+The log-likelihood function for the complete data $(x_i, y_i), i = 1,...,n$ is based on data points that are inaccessible directly, "latent", or in some way not observed. Given these, the log-likelihood can be maximized to yield the most likely distribution parameters. We known their respective distributions,
 
 $$
 \begin{aligned}
-x_i &\sim \text{exp}(\lambda_0) = \lambda_1 e^{-y_i\lambda_1}, \\
-y_i &\sim \text{exp}(\lambda_1) = \lambda_1 e^{-y_i\lambda_1}.
+x_i &\sim \exp(\lambda_0) = \lambda_1 e^{-y_i\lambda_1}, \\
+y_i &\sim \exp(\lambda_1) = \lambda_1 e^{-y_i\lambda_1}.
 \end{aligned}
 $$
 
-In addition they are indepentent of each other which means the each data pair can be written as a product, and the likelihood of the joint distribution is just the product of each pair since they are iid.:
+They are in addition indepentent of each other, which means the each data pair can be written as a product. Furthermore, the likelihood function of the joint distribution is just the product of each pair, since they are i.i.d.:
 
 $$
 \begin{aligned}
-(x_i, y_i) &\sim  \lambda_0 \lambda_1e^{-x_i\lambda_0-y_i\lambda_1}, \\
+(x_i, y_i) &\sim  \lambda_0 \lambda_1e^{-x_i\lambda_0}e^{-y_i\lambda_1}, \\
 f(\vect{x}, \vect{y}|\lambda_0, \lambda_1) &= \prod_{i=1}^n \lambda_0 \lambda_1e^{-x_i\lambda_0-y_i\lambda_1}, \\
-ln f(\vect{x}, \vect{y})|\lambda_0, \lambda_1) &= \sum_{i=1}^n (log(\lambda_0 \lambda_1) -x_i\lambda_0 - y_i\lambda_1).
+\ln f(\vect{x}, \vect{y})|\lambda_0, \lambda_1) &= \sum_{i=1}^n (log(\lambda_0 \lambda_1) -x_i\lambda_0 - y_i\lambda_1).
 \end{aligned}
 $$
 
-In the setting where the $x_i, y_i$ are unobserved, this is of course impossible to maximize since the data is not really known. We do however observe 
+In the setting where the $x_i, y_i$ are unobserved, this is of course impossible to maximize, since the data is not really known. We do, however, observe 
 
 $$
-z_i = \text{max}(x_i,y_i) \quad \text{for}  i= 1,...,n
+z_i = \text{max}(x_i,y_i) \quad \text{for} \quad i= 1,...,n
 $$
 and
 $$
-u_i = \text{I}(x_i \geq y_i) \quad \text{for}  i= 1,...,n.
+u_i = \text{I}(x_i \geq y_i) \quad \text{for} \quad  i= 1,...,n.
 $$
 
-By conditioning on $z_i$ and $u_i$ (which is all that we really know) and assuming we know some values for the parameters as well $\lambda_0, lambda_1$, we can compute the expected value of the resulting log-likelihood:
+By conditioning on $z_i$ and $u_i$ and assuming we know some (approximate) values for the parameters as well $\lambda_0, lambda_1$, we can compute the expected value of the resulting log-likelihood:
 
 $$
 \begin{aligned}
-E[ln f(x,y|z,u,\lambda_0^t, \lambda_1^t)] &= E[\sum_{i=1}^n (log(\lambda_0 \lambda_1) -x_i\lambda_0 - y_i\lambda_1)]  \\
-&= \sum_{i=1}^n E[(log(\lambda_0^t \lambda_1^t)] -\sum_{i=1}^n E[ x_i\lambda_0^t] - \sum_{i=1}^n E[ y_i\lambda_1^t)]  \\
-&= \frac{1}{n}log(\lambda_0^t \lambda_1^t) -\sum_{i=1}^n [z_i u_i \lambda_0^t + E[\lambda_0 exp(x_i\lambda_0)/(1-e^{-\lambda z_i})]]- \sum_{i=1}^n E[ y_i\lambda_1^t)\\
-\end{aligned}n\
+\mathbb{E}[\ln f(\vect{x},\vect{y}|\vect{z},\vect{u},\lambda_0^t, \lambda_1^t)] &= \mathbb{E}\bigg[\sum_{i=1}^n (ln(\lambda_0 \lambda_1) -x_i\lambda_0 - y_i\lambda_1)\bigg|\vect{z},\vect{u},\lambda_0^{(t)}, \lambda_1^{(t)}\bigg]  \\
+&= \sum_{i=1}^n \mathbb{E} \big[ln(\lambda_0 \lambda_1)\big] -\sum_{i=1}^n \mathbb{E}[ x_i\lambda_0] - \sum_{i=1}^n \mathbb{E} \big[ y_i\lambda_1\big]  \\
+&= \frac{1}{n}  \big[ln(\lambda_0^{(t)} \lambda_1^{(t)})\big] -\lambda_0^{(t)}\sum_{i=1}^n \mathbb{E}[x_i] - \lambda_1^{(t)})\sum_{i=1}^n \mathbb{E}[y_i].  \\
+\end{aligned}
 $$
 
+To get the expectation of $x_i$ and $y_i$ we need to rewrite them in terms of the random variables we are conditioning on; $u_i$ and $z_i$. For each of the unobserved variables there are two cases: the first one is that the variable is the greater or equal to the other, in which case it is known and it is simply the max-value $z_i$ times the indicator function $u_i$ for $x_i$, or $1-u_i$ for $y_i$. 
+
+The second case is where the variable in question is the smaller of the two. The expectation is taken of an exponential distribution, bounded above by the maximum variable and normalized to suit the given area, as follows:
+
+$$
+\begin{aligned}
+\mathbb{E}\big[x_i \big|z_i,u_i,\lambda_0^{(t)}, \lambda_1^{(t)}\big] &= z_i u_i + \mathbb{E} \bigg[\frac{\lambda_0e^{-x_i\lambda_0}} {\int_0^{z_i}\lambda_0e^{-x_i\lambda_0}\,dx_i}      \bigg] \\
+&= z_i u_i +  \bigg[\frac{\int_0^{z_i}x_i\lambda_0e^{-x_i\lambda_0}\,dx_i} 
+{1- e^{z_i\lambda_0}}      \bigg] \\
+&= z_iu_i + \bigg[\frac{\int_0^{z_i}x_i\lambda_0e^{-x_i\lambda_0}\,dx_i} 
+{1- e^{z_i\lambda_0}}      \bigg] \\
+\end{aligned}
+$$
 
 
 

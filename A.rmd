@@ -56,6 +56,7 @@ LA <- function(res, beta){
   beta_boot = ARp.beta.est(x_pseudo,2)$LA
   return(beta_boot)
 }
+
 boot_LS = replicate(B,LS(res_LS, beta_estimate$LS))
 boot_LA = replicate(B,LA(res_LA, beta_estimate$LA))
 
@@ -76,6 +77,23 @@ var_LS2 = sum((boot_LS[2,]-beta_estimate$LS[2])^2)/B
 var_LA1 = sum((boot_LA[1,]-beta_estimate$LA[1])^2)/B
 var_LA2 = sum((boot_LA[2,]-beta_estimate$LA[2])^2)/B
 
+
+##  Simulate x_101's distribution
+##  Choose beta_1, beta_2 from the bootstrap, choose a random residuals from the original 98 residuals.
+
+pred_new <- function(boot, residuals){
+  return(boot[1,]*ts[100] + boot[2,]*ts[99] + sample(residuals, B, replace=T))
+}
+
+x101_LA = pred_new(boot_LA,res_LA)
+x101_LS = pred_new(boot_LS,res_LS)
+
+
+hist(x101_LA, 30)
+hist(x101_LS, 30)
+
+quantiles_LA = quantile(x101_LA, c(0.025,0.975))
+quantiles_LS = quantile(x101_LS, c(0.025,0.975))
 ```
 
 

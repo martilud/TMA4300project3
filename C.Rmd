@@ -30,7 +30,7 @@ $$
 \begin{aligned}
 (x_i, y_i) &\sim  \lambda_0 \lambda_1e^{-x_i\lambda_0}e^{-y_i\lambda_1}, \\
 f(\vect{x}, \vect{y}|\lambda_0, \lambda_1) &= \prod_{i=1}^n \lambda_0 \lambda_1e^{-x_i\lambda_0-y_i\lambda_1}, \\
-\ln f(\vect{x}, \vect{y})|\lambda_0, \lambda_1) &= \sum_{i=1}^n (log(\lambda_0 \lambda_1) -x_i\lambda_0 - y_i\lambda_1).
+\ln f(\vect{x}, \vect{y})|\lambda_0, \lambda_1) &= \sum_{i=1}^n (\ln(\lambda_0 \lambda_1) -x_i\lambda_0 - y_i\lambda_1).
 \end{aligned}
 $$
 
@@ -44,33 +44,67 @@ $$
 u_i = \text{I}(x_i \geq y_i) \quad \text{for} \quad  i= 1,...,n.
 $$
 
-By conditioning on $z_i$ and $u_i$ and assuming we know some (approximate) values for the parameters as well $\lambda_0, lambda_1$, we can compute the expected value of the resulting log-likelihood:
+By conditioning on $z_i$ and $u_i$ and assuming we know some (approximate) values for the parameters as well, $\lambda_0, \lambda_1$, we can compute the expected value of the resulting log-likelihood:
 
 $$
 \begin{aligned}
-\mathbb{E}[\ln f(\vect{x},\vect{y}|\vect{z},\vect{u},\lambda_0^t, \lambda_1^t)] &= \mathbb{E}\bigg[\sum_{i=1}^n (ln(\lambda_0 \lambda_1) -x_i\lambda_0 - y_i\lambda_1)\bigg|\vect{z},\vect{u},\lambda_0^{(t)}, \lambda_1^{(t)}\bigg]  \\
-&= \sum_{i=1}^n \mathbb{E} \big[ln(\lambda_0 \lambda_1)\big] -\sum_{i=1}^n \mathbb{E}[ x_i\lambda_0] - \sum_{i=1}^n \mathbb{E} \big[ y_i\lambda_1\big]  \\
-&= \frac{1}{n}  \big[ln(\lambda_0^{(t)} \lambda_1^{(t)})\big] -\lambda_0^{(t)}\sum_{i=1}^n \mathbb{E}[x_i] - \lambda_1^{(t)})\sum_{i=1}^n \mathbb{E}[y_i].  \\
+\mathbb{E}[\ln f(\vect{x},\vect{y}|\vect{z},\vect{u},\lambda_0^t, \lambda_1^t)] &= \mathbb{E}\bigg[\sum_{i=1}^n (\ln(\lambda_0 \lambda_1) -x_i\lambda_0 - y_i\lambda_1)\bigg|\vect{z},\vect{u},\lambda_0^{(t)}, \lambda_1^{(t)}\bigg]  \\
+&= \sum_{i=1}^n \mathbb{E} \big[\ln(\lambda_0 \lambda_1)\big] -\sum_{i=1}^n \mathbb{E}[ x_i\lambda_0] - \sum_{i=1}^n \mathbb{E} \big[ y_i\lambda_1\big]  \\
+&= n  \big[\ln(\lambda_0^{(t)} \lambda_1^{(t)})\big] -\lambda_0^{(t)}\sum_{i=1}^n \mathbb{E}[x_i] - \lambda_1^{(t)})\sum_{i=1}^n \mathbb{E}[y_i].  \\
 \end{aligned}
 $$
 
-To get the expectation of $x_i$ and $y_i$ we need to rewrite them in terms of the random variables we are conditioning on; $u_i$ and $z_i$. For each of the unobserved variables there are two cases: the first one is that the variable is the greater or equal to the other, in which case it is known and it is simply the max-value $z_i$ times the indicator function $u_i$ for $x_i$, or $1-u_i$ for $y_i$. 
+To get the expectation of $x_i$ and $y_i$ we need to rewrite them in terms of the random variables we are conditioning on; $u_i$ and $z_i$. For each of the unobserved variables there are two cases: the first one is that the variable is the greater or equal to the other, in which case it is known and it is simply the max-value $z_i$ times the indicator function $u_i$ for $x_i$, or $1-u_i$ for $y_i$: 
 
-The second case is where the variable in question is the smaller of the two. The expectation is taken of an exponential distribution, bounded above by the maximum variable and normalized to suit the given area, as follows:
+$$
+\mathbb{E}[x_i|u_i=1, z_i] = u_iz_i.
+$$
+
+The second case is where the latent variable in question is the smaller one. The expectation is taken of an exponential distribution, bounded above by the maximum variable and normalized to suit the given area, as follows:
 
 $$
 \begin{aligned}
-\mathbb{E}\big[x_i \big|z_i,u_i,\lambda_0^{(t)}, \lambda_1^{(t)}\big] &= z_i u_i + \mathbb{E} \bigg[\frac{\lambda_0e^{-x_i\lambda_0}} {\int_0^{z_i}\lambda_0e^{-x_i\lambda_0}\,dx_i}      \bigg] \\
-&= z_i u_i +  \bigg[\frac{\int_0^{z_i}x_i\lambda_0e^{-x_i\lambda_0}\,dx_i} 
-{1- e^{z_i\lambda_0}}      \bigg] \\
-&= z_iu_i + \bigg[\frac{\int_0^{z_i}x_i\lambda_0e^{-x_i\lambda_0}\,dx_i} 
-{1- e^{z_i\lambda_0}}      \bigg] \\
+\mathbb{E}\big[x_i \big|u_i=0,z_i,\lambda_0^{(t)}, \lambda_1^{(t)}\big] &=  \mathbb{E} \bigg[\frac{\lambda_0e^{-x_i\lambda_0}} {\int_0^{z_i}\lambda_0e^{-x_i\lambda_0}\,dx_i}      \bigg] \\
+&=  \frac{\int_0^{z_i}x_i\lambda_0e^{-x_i\lambda_0}\,dx_i} 
+{1- e^{-z_i\lambda_0}}       \\
+&=\frac{\int_0^{z_i}x_i\lambda_0e^{-x_i\lambda_0}\,dx_i} 
+{1- e^{-z_i\lambda_0}}      
+\end{aligned}
+$$
+
+The integral is easily evaluated using integration by parts:
+
+$$
+\begin{aligned}
+ \int_0^{z_i} \lambda_0x_ie^{-x_i\lambda_0}\,dx_i &= -x_ie^{-\lambda_0x_i} \bigg|_0^{z_i} -  \int_0^{z_i} \lambda_0e^{-x_i\lambda_0}\,dx_i \\
+ &= -z_ie^{-\lambda_0x_i} + e^{-\lambda_0z_i} -1 \\
+ &= e^{-\lambda_0z_i}(1-z_i) -1.
+\end{aligned}
+$$
+ 
+ Substituting into the expectation for $x_i | u_i=0$ we get
+ 
+ 
+$$
+\begin{aligned}
+\mathbb{E}\big[x_i \big|u_i=0,z_i,\lambda_0^{(t)}, \lambda_1^{(t)}\big] &= \frac{\int_0^{z_i}x_i\lambda_0e^{-x_i\lambda_0}\,dx_i} 
+{1- e^{-z_i\lambda_0}} \\
+&=\frac{e^{-\lambda_0z_i}(1-z_i) -1} {1- e^{-z_i\lambda_0}} \\ 
+\end{aligned}
+$$
+
+Hence the full expectations for $x_i$ and $y_i$ are
+
+$$
+\begin{aligned}
+\mathbb{E}[\ln f(\vect{x},\vect{y}|\vect{z},\vect{u},\lambda_0^t, \lambda_1^t)]
+&= n \ln(\lambda_0^{(t)} \lambda_1^{(t)}) -\lambda_0^{(t)}\sum_{i=1}^n \mathbb{E}[x_i] - \lambda_1^{(t)})\sum_{i=1}^n \mathbb{E}[y_i]  \\
+&= n \ln(\lambda_0^{(t)} \lambda_1^{(t)}) -\lambda_0^{(t)}\sum_{i=1}^n \bigg[ \mathbb{E}[x_i|x_i \geq y_i] +  \mathbb{E}[x_i|x_i<y_i] \bigg] - \lambda_1^{(t)})\sum_{i=1}^n \bigg[ \mathbb{E}[y_i>x_i] + \mathbb{E}[y_i|y_i \leq x_i] \bigg]  \\
+&= n \ln(\lambda_0^{(t)} \lambda_1^{(t)}) -\lambda_0^{(t)}\sum_{i=1}^n  \bigg[ u_iz_i +  (1-u_i)\frac{e^{-\lambda_0z_i}(1-z_i) -1} {1- e^{-z_i\lambda_0}} \bigg] \\
+& - \lambda_1^{(t)})\sum_{i=1}^n \bigg[ (1-u_i)z_i + u_i \frac{e^{-\lambda_0z_i}(1-z_i) -1} {1- e^{-z_i\lambda_0}} \bigg].  \\
 \end{aligned}
 $$
 
 
-
-
-
-
+## 2.
 

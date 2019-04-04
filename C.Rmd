@@ -10,6 +10,9 @@ output: pdf_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+u = as.logical(scan("u.txt")) 
+z = scan("z.txt")
+
 ```
 
 
@@ -107,4 +110,22 @@ $$
 
 
 ## 2.
+
+```{r}
+tol = 10
+lambda0 = 1
+lambda1 = 1
+n = length(u)
+
+
+while (tol > 1e-4){
+# Mangler M-steget, kommer snart  
+  
+temp0 = sum((1/lambda0) + z[!u]/expm1(lambda0*z[!u]))
+temp1 = sum((1/lambda1) + z[u]/expm1(lambda1*z[u]))
+Q = n*(log(lambda0)+log(lambda1)) - lambda0*(sum(z[u]) + temp0) - lambda1*(sum(z[!u])  + temp1) 
+
+}
+
+```
 

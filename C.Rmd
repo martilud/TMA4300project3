@@ -37,7 +37,19 @@ f(\vect{x}, \vect{y}|\lambda_0, \lambda_1) &= \prod_{i=1}^n \lambda_0 \lambda_1e
 \end{aligned}
 $$
 
-In the setting where the $x_i, y_i$ are unobserved, this is of course impossible to maximize, since the data is not really known. We do, however, observe 
+If the latent variables $\vect{x},\vect{y}$ were observed and known, the parameter optimization would be easy to execute in the classical likelihood-manner: take the derivative of the log-likelihood (given the exact observations) with resepct to $\lambda_0$ and $\lambda_1$ and set to zero to find to maximum likelihood.
+
+The difference to this situation is that the data points to be used in the likelihood is not observed directly, but approximated. To approximate the data points $\vect{x}, \vect{y}$ needed to maximize the likelihood, we need (ironically) to use the parameters. These are of course not known either, since the whole point of giving exact data to the likelihood is to find the right parameters for the distribution.
+
+This is were the iterative EM-style comes into play. Since we need to know our data $\vect{x}, \vect{y}$ in order to maximize the parameters, and we need our parameters to get our best guess on our unobserved data, we do exactly that:
+
+* Approximate the expectations of $\vect{x}$ and $\vect{y}$ with the current parameter guess to maximize a likelihood that is as correct as possible.
+
+* Maximize the likelihood using our approximated values and obtain new maximized parameters.
+
+* Stop the algorithm when the new parameter guesses in the M-step and the parameters on which the data is based on is the E-step are coinciding.
+
+To approximate the latent data in the E-step we are conditioning on the observed data and the current parameter values: 
 
 $$
 z_i = \text{max}(x_i,y_i) \quad \text{for} \quad i= 1,...,n

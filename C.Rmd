@@ -33,7 +33,7 @@ $$
 \begin{aligned}
 (x_i, y_i) &\sim  \lambda_0 \lambda_1e^{-x_i\lambda_0}e^{-y_i\lambda_1}, \\
 f(\vect{x}, \vect{y}|\lambda_0, \lambda_1) &= \prod_{i=1}^n \lambda_0 \lambda_1e^{-x_i\lambda_0-y_i\lambda_1}, \\
-\ln f(\vect{x}, \vect{y})|\lambda_0, \lambda_1) &= \sum_{i=1}^n (\ln(\lambda_0 \lambda_1) -x_i\lambda_0 - y_i\lambda_1).
+\ln f(\vect{x}, \vect{y})|\lambda_0, \lambda_1) &= n\ln(\lambda_0 \lambda_1)- \lambda_0 \sum_{i=1}^n  x_i -\lambda_1 \sum_{i=1}^n y_i.
 \end{aligned}
 $$
 
@@ -41,35 +41,39 @@ If the latent variables $\vect{x},\vect{y}$ were observed and known, the paramet
 
 The difference to this situation is that the data points to be used in the likelihood is not observed directly, but approximated. To approximate the data points $\vect{x}, \vect{y}$ needed to maximize the likelihood, we need (ironically) to use the parameters. These are of course not known either, since the whole point of giving exact data to the likelihood is to find the right parameters for the distribution.
 
-This is were the iterative EM-style comes into play. Since we need to know our data $\vect{x}, \vect{y}$ in order to maximize the parameters, and we need our parameters to get our best guess on our unobserved data, we do exactly that:
+This is were the iterative EM-style comes into play. Since we need to know our data $\vect{x}, \vect{y}$ in order to maximize the parameters, and we need the parameters to obtain the best guess on the unobserved data, we do exactly that:
 
 * Approximate the expectations of $\vect{x}$ and $\vect{y}$ with the current parameter guess to maximize a likelihood that is as correct as possible.
 
-* Maximize the likelihood using our approximated values and obtain new maximized parameters.
+* Maximize the likelihood as normal, using the approximated values for the data and obtaining new maximized parameters.
 
-* Stop the algorithm when the new parameter guesses in the M-step and the parameters on which the data is based on is the E-step are coinciding.
+* Repeat the E- and M- steps to get increasingly better approximated data and hence increasingly better parameter estimates. 
+
+* Stop the algorithm when the new parameter guesses in the M-step and the parameters on which the data is based on is the E-step are coinciding/converged.
 
 To approximate the latent data in the E-step we are conditioning on the observed data and the current parameter values: 
 
 $$
 z_i = \text{max}(x_i,y_i) \quad \text{for} \quad i= 1,...,n
 $$
-and
 $$
 u_i = \text{I}(x_i \geq y_i) \quad \text{for} \quad  i= 1,...,n.
+$$
+and 
+$$
+\hat{\lambda}_0 = \lambda_0^{(t)}, \quad \hat{\lambda}_1=\lambda_1^{(t)}. 
 $$
 
 By conditioning on $z_i$ and $u_i$ and assuming we know some (approximate) values for the parameters as well, $\lambda_0, \lambda_1$, we can compute the expected value of the resulting log-likelihood:
 
 $$
 \begin{aligned}
-\mathbb{E}[\ln f(\vect{x},\vect{y}|\vect{z},\vect{u},\lambda_0^t, \lambda_1^t)] &= \mathbb{E}\bigg[\sum_{i=1}^n (\ln(\lambda_0 \lambda_1) -x_i\lambda_0 - y_i\lambda_1)\bigg|\vect{z},\vect{u},\lambda_0^{(t)}, \lambda_1^{(t)}\bigg]  \\
-&= \sum_{i=1}^n \mathbb{E} \big[\ln(\lambda_0 \lambda_1)\big] -\sum_{i=1}^n \mathbb{E}[ x_i\lambda_0] - \sum_{i=1}^n \mathbb{E} \big[ y_i\lambda_1\big]  \\
-&= n  \big[\ln(\lambda_0^{(t)} \lambda_1^{(t)})\big] -\lambda_0^{(t)}\sum_{i=1}^n \mathbb{E}[x_i] - \lambda_1^{(t)})\sum_{i=1}^n \mathbb{E}[y_i].  \\
+\mathbb{E}[\ln f(\vect{x},\vect{y}|\vect{z},\vect{u},\lambda_0^{(t)}, \lambda_1^{(t)})] 
+&= n \ln(\lambda_0 \lambda_1) -\lambda_0\sum_{i=1}^n \mathbb{E}[ x_i] - \lambda_1\sum_{i=1}^n \mathbb{E} \big[ y_i\big]  \\
 \end{aligned}
 $$
 
-To get the expectation of $x_i$ and $y_i$ we need to rewrite them in terms of the random variables we are conditioning on; $u_i$ and $z_i$. For each of the unobserved variables there are two cases: the first one is that the variable is the greater or equal to the other, in which case it is known and it is simply the max-value $z_i$ times the indicator function $u_i$ for $x_i$, or $1-u_i$ for $y_i$: 
+We rewrite $x_i$ and $y_i$ in terms of the variables we are conditioning on get the expectation. For each of the unobserved variables there are two cases: the first one is that the variable is the greater or equal to the other, in which case it is known and it is simply the max-value $z_i$ times the indicator function $u_i$ for $x_i$, or $1-u_i$ for $y_i$: 
 
 $$
 \mathbb{E}[x_i|u_i=1, z_i] = u_iz_i.

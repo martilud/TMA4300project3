@@ -117,12 +117,14 @@ Hence the full expectations for $x_i$ and $y_i$ are
 $$
 \begin{aligned}
 \mathbb{E}[\ln f(\vect{x},\vect{y}|\vect{z},\vect{u},\lambda_0^t, \lambda_1^t)]
-&= n \ln(\lambda_0^{(t)} \lambda_1^{(t)}) -\lambda_0^{(t)}\sum_{i=1}^n \mathbb{E}[x_i] - \lambda_1^{(t)})\sum_{i=1}^n \mathbb{E}[y_i]  \\
-&= n \ln(\lambda_0^{(t)} \lambda_1^{(t)}) -\lambda_0^{(t)}\sum_{i=1}^n \bigg[ \mathbb{E}[x_i|x_i \geq y_i] +  \mathbb{E}[x_i|x_i<y_i] \bigg] - \lambda_1^{(t)})\sum_{i=1}^n \bigg[ \mathbb{E}[y_i>x_i] + \mathbb{E}[y_i|y_i \leq x_i] \bigg]  \\
-&= n \ln(\lambda_0^{(t)} \lambda_1^{(t)}) -\lambda_0^{(t)}\sum_{i=1}^n  \bigg[ u_iz_i +  (1-u_i)\frac{e^{-\lambda_0z_i}(1-z_i) -1} {1- e^{-z_i\lambda_0}} \bigg] \\
-& - \lambda_1^{(t)})\sum_{i=1}^n \bigg[ (1-u_i)z_i + u_i \frac{e^{-\lambda_0z_i}(1-z_i) -1} {1- e^{-z_i\lambda_0}} \bigg].  \\
+&=  n \ln(\lambda_0 \lambda_1) -\lambda_0\sum_{i=1}^n \mathbb{E}[ x_i] - \lambda_1\sum_{i=1}^n \mathbb{E} \big[ y_i\big]   \\
+&= n \ln(\lambda_0 \lambda_1) -\lambda_0\sum_{i=1}^n \bigg[ \mathbb{E}[x_i|x_i \geq y_i] +  \mathbb{E}[x_i|x_i<y_i] \bigg] - \lambda_1\sum_{i=1}^n \bigg[ \mathbb{E}[y_i>x_i] + \mathbb{E}[y_i|y_i \leq x_i] \bigg]  \\
+&= n \ln(\lambda_0 \lambda_1) -\lambda_0\sum_{i=1}^n  \bigg[ u_iz_i +  (1-u_i)\frac{e^{-\lambda_0^{(t)}z_i}(1-z_i) -1} {1- e^{-z_i\lambda_0^{(t)}}} \bigg] \\
+& - \lambda_1\sum_{i=1}^n \bigg[ (1-u_i)z_i + u_i \frac{e^{-\lambda_0^{(t)}z_i}(1-z_i) -1} {1- e^{-z_i\lambda_0^{(t)}}} \bigg].  \\
 \end{aligned}
 $$
+This is the best log-likelihood we have available for a given parameter guess $\hat{\lambda}_0 = \lambda_0^{(t)}, \quad \hat{\lambda}_1=\lambda_1^{(t)}$. We carry on with the standard procedure for maximizing the likelihood; taking the derivative with respect to the parameters and setting the resulting expression to zero.
+
 
 
 ## 2.

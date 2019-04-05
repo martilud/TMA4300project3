@@ -133,8 +133,8 @@ $$
 \frac{Q(\vect{\lambda}|\vect{\lambda^{(t)}})}{\partial \lambda_0} &= \frac{n}{\lambda_0} - \sum_{i=1}^n  \bigg[ u_iz_i +  (1-u_i)\frac{e^{-\lambda_0^{(t)}z_i}(1-z_i) -1} {1- e^{-z_i\lambda_0^{(t)}}} \bigg], \\
 \frac{Q(\vect{\lambda}|\vect{\lambda^{(t)}})}{\partial \lambda_1} &= \frac{n}{\lambda_1} -\sum_{i=1}^n \bigg[ (1-u_i)z_i + u_i \frac{e^{-\lambda_0^{(t)}z_i}(1-z_i) -1} {1- e^{-z_i\lambda_0^{(t)}}} \bigg], \\
 &\Updownarrow \\
-\lambda^{(t+1)}_0 &= \frac{\sum_{i=1}^n  \bigg[ u_iz_i +  (1-u_i)\frac{e^{-\lambda_0^{(t)}z_i}(1-z_i) -1} {1- e^{-z_i\lambda_0^{(t)}}} \bigg]}{n}, \\
-\lambda^{(t+1)}_1 &= \frac{\sum_{i=1}^n \bigg[ (1-u_i)z_i + u_i \frac{e^{-\lambda_0^{(t)}z_i}(1-z_i) -1} {1- e^{-z_i\lambda_0^{(t)}}} \bigg]}{n}.
+\lambda^{(t+1)}_0 &= \frac{n}{\sum_{i=1}^n  \bigg[ u_iz_i +  (1-u_i)\frac{e^{-\lambda_0^{(t)}z_i}(1-z_i) -1} {1- e^{-z_i\lambda_0^{(t)}}} \bigg]}, \\
+\lambda^{(t+1)}_1 &= \frac{n}{\sum_{i=1}^n \bigg[ (1-u_i)z_i + u_i \frac{e^{-\lambda_0^{(t)}z_i}(1-z_i) -1} {1- e^{-z_i\lambda_0^{(t)}}} \bigg]}.
 \end{aligned}
 $$
 
@@ -147,13 +147,15 @@ lambda0 = 1
 lambda1 = 1
 n = length(u)
 
-
-while (tol > 1e-4){
-# Mangler M-steget, kommer snart  
+while (tol > 1e-6){
+  temp0 = sum((1/lambda0) - z[!u]/expm1(lambda0*z[!u]))
+  temp1 = sum((1/lambda1) - z[u]/expm1(lambda1*z[u]))
+  new_lambda0 = n/(sum(z[u]) + temp0)
+  new_lambda1 = n/(sum(z[!u])  + temp1)
+  tol = sqrt((new_lambda0-lambda0)^2 + (new_lambda1-lambda1)^2 )
   
-temp0 = sum((1/lambda0) + z[!u]/expm1(lambda0*z[!u]))
-temp1 = sum((1/lambda1) + z[u]/expm1(lambda1*z[u]))
-Q = n*(log(lambda0)+log(lambda1)) - lambda0*(sum(z[u]) + temp0) - lambda1*(sum(z[!u])  + temp1) 
+  lambda0 = new_lambda0
+  lambda1 = new_lambda1
 
 }
 

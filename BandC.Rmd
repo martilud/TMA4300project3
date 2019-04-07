@@ -106,34 +106,84 @@ which is obviously negative definite for positive $\lambda_0$ and $\lambda_1$, a
 z = read.table('z.txt', header = FALSE, sep = "", dec = ".")
 u = read.table('u.txt', header = FALSE, sep = "", dec = ".")
 n = length(z[,])
-lambda_0_next <- function(lambda_0_prev){
+lambda_0_next <- function(lambda_0_prev, u, z){
   sum = 0
   for (i in 1:n){
-    if (u[i,] == 1){sum = sum + z[i,]}
-    else {sum = sum + 1.0/lambda_0_prev - z[i,]/(exp(lambda_0_prev * z[i,])-1)}
+    if (u[i] == 1){sum = sum + z[i]}
+    else {sum = sum + 1.0/lambda_0_prev - z[i]/(exp(lambda_0_prev * z[i])-1)}
   }
   return(n/sum)
 }
-lambda_1_next <- function(lambda_1_prev){
+lambda_1_next <- function(lambda_1_prev, u, z){
   sum = 0
   for (i in 1:n){
-    if (u[i,] == 0){sum = sum + z[i,]}
-    else {sum = sum + 1.0/lambda_1_prev - z[i,]/(exp(lambda_1_prev * z[i,])-1)}
+    if (u[i] == 0){sum = sum + z[i]}
+    else {sum = sum + 1.0/lambda_1_prev - z[i]/(exp(lambda_1_prev * z[i])-1)}
   }
   return(n/sum)
 }
-MAXITER = 10
-lambda_0_list = numeric(MAXITER)
-lambda_1_list = numeric(MAXITER)
-lambda_0 = 1.0
-lambda_1 = 1.0
-lambda_0_list[1] = lambda_0
-lambda_1_list[1] = lambda_1
-for (j in 1:(MAXITER-1)){
-    lambda_0_list[j+1] = lambda_0_next(lambda_0_list[j])
-    lambda_1_list[j+1] = lambda_1_next(lambda_1_list[j])
+EM <- function(u, z, lambda_0_init = 1.0, lambda_1_init = 1.0, plot=0){
+  MAXITER = 50
+  k = MAXITER
+  TOL = 1e-6
+  lambda_0_list = numeric(MAXITER)
+  lambda_1_list = numeric(MAXITER)
+  lambda_0_list[1] = lambda_0_init
+  lambda_1_list[1] = lambda_1_init
+  for (j in 1:(MAXITER-1)){
+      lambda_0_list[j+1] = lambda_0_next(lambda_0_list[j], u, z)
+      lambda_1_list[j+1] = lambda_1_next(lambda_1_list[j], u, z)
+      if(sqrt((lambda_0_list[j+1]-lambda_0_list[j])^2 + (lambda_1_list[j+1]-lambda_1_list[j])^2) < TOL){
+        k = j
+        break
+      }
+  }
+  if(plot){
+    plot(lambda_1_list[1:k], type="b", main="", xlab = "Iterations", ylab="", col="red")
+    lines(lambda_0_list[1:k], type="b", col="blue")
+  }
+  return(list("lambda_0" = lambda_0_list[k], "lambda_1" = lambda_1_list[k]))
 }
-
-plot(lambda_1_list, type="b", main="", xlab = "Iterations", ylab="", col="red")
-lines(lambda_0_list, type="b", col="blue")
+EM_result = EM(u[,],z[,],1)
+true_lambda_0 = EM_result$lambda_0
+true_lambda_1 = EM_result$lambda_1
 ```
+
+## C.3
+The EM-algorithm gives us estimates $(\hat{\lambda}_0, \hat{\lambda}_1)$, but says nothing about the standard deviations, bias or correlation of our estimators. Bootstrapping comes to the rescue. The algorithm can be written simply as
+\begin{itemize}
+\item For $b=1...B$ bootstrap samples
+\item   sample $u^b$ and corresponding $z^b$ from the original dataset
+\item   use EM algorithm to find $\hat{\lambda}_0^b$ and $\hat{\lambda}_1^b$
+\item   optional: Use $\hat{\lambda}_0^{b-1}$ and $\hat{\lambda}_1^{b-1}$ as initial values in the EM algorithm for (hopefully) faster convergence
+\item extract some interesting feature (mean, standard deviation and correlation) from the new populations $(\hat{\lambda}_0^\ast, \hat{\lambda}_1^\ast) = (\hat{\lambda}_0^1,...\hat{\lambda}_0^B, \hat{\lambda}_1^1,...\hat{\lambda}_1^B)$.
+\end{itemize}
+
+```{r}
+B = 10000 # Number of bootstrap samples
+lambda_0_strapped = numeric(B)
+lambda_1_strapped = numeric(B)
+lambda_0_init = 1.0
+lambda_1_init = 1.0
+for (i in 1:B){
+  strapped_indices = sample(1:n, n, replace=T)
+  EM_result = EM(u[strapped_indices,], z[strapped_indices,], lambda_0_init, lambda_1_init, 0)
+  lambda_0_strapped[i] = EM_result$lambda_0
+  lambda_1_strapped[i] = EM_result$lambda_1
+  lambda_0_init = EM_result$lambda_0
+  lambda_1_init = EM_result$lambda_1
+}
+"sd of lambda_0"
+sd(lambda_0_strapped)
+"sd of lambda_1"
+sd(lambda_1_strapped)
+"bias of lambda_0"
+mean(lambda_0_strapped) - true_lambda_0
+"bias of lambda_1"
+mean(lambda_1_strapped) - true_lambda_1
+"correlation between lambda_0 and lambda_1"
+cor(lambda_0_strapped, lambda_1_strapped)
+```
+
+## C.4
+Now we try to find the likelihood $f_{Z_i,U_i}(z_i,u_i|\lambda_0,\lambda_1)$ analytically, which we can use to find the maximum likelihood estimators $\hat{\lambda}_0$ and $\hat{\lambda}_1$.

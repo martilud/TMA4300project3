@@ -1,0 +1,139 @@
+---
+title: "TMA4300 Project 3"
+author: "Martin"
+date: "March 25, 2019"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(data.table)
+```
+
+## B
+
+
+```{r}
+set.seed(314)
+bilirubin <- read.table("bilirubin.txt",header=T)
+boxplot(log(meas)~pers, data = bilirubin, main = "Logratihm of concentrations")
+linearmodel = lm(log(meas)~pers, data = bilirubin)
+Fval = summary(linearmodel)$fstatistic[1] # Value of F-statistic
+Fval
+n1 = 11; n2 = 10; n3 = 8; n = n1 + n2 + n3
+permTest <- function(){
+  permbilirubin = copy(bilirubin)
+  permbilirubin$meas = sample(bilirubin$meas,n, replace = F)
+  linearmodel = lm(log(meas)~pers, data = permbilirubin)
+  return(summary(linearmodel)$fstatistic[1])
+}
+B = 999
+results = replicate(B,permTest())
+hist(results, freq=F, breaks=50)
+x = (0:1000)/12
+pdf = sapply(x,df,2,26)
+lines(x,pdf)
+abline(v = Fval, col = "red")
+newp = length(which(results >= Fval))/B
+newp
+abline(v = qf(1-newp, 2,26), col= "blue")
+#legend("upperright", legend= c("old F value", "new F value"))
+```
+
+
+## C.1
+$x$ and $y$ are exponentially distributed, and they are dependent. We can therefore write the likelihood:
+\begin{align*}
+  f(x,y|\lambda_0,\lambda_1) = f(x|\lambda_0)f(y|\lambda_1) = \prod_i^n p(x_i|\lambda_0) \prod_i^n p(y_i|\lambda_1)\\
+  \log f(x,y|\lambda_0,\lambda_1) = \sum_i^n \log p(x_i|\lambda_0) + \sum_i^n \log p(y_i|\lambda_1) \\
+  = \sum_i^n \log \lambda_0 \exp(-\lambda_0 x_i) + \sum_i^n \log \lambda_1 \exp(-\lambda_1 y_i) = n(\log \lambda_0 + \log \lambda_1) - \lambda_0 \sum_i^n x_i - \lambda_1 \sum_i^n y_i \\
+  E(\log f(x,y|\lambda_0,\lambda_1)|z,u,\lambda_0^{(t)},\lambda_1^{(t)}) = n(\log \lambda_0 + \log \lambda_1) - \lambda_0 \sum_i^n E(x_i|z_i,u_i,\lambda_0^{(t)},\lambda_1^{(t)}) - \lambda_1 \sum_i^n E(y_i|z_i,u_i,\lambda_0^{(t)},\lambda_1^{(t)})
+\end{align*}
+Need $E(x_i|z_i,u_i,\lambda_0^{(t)}, \lambda_1^{(t)})$ and $E(y_i|z_i,u_i,\lambda_0^{(t)}, \lambda_1^{(t)})$.
+Know that (don't think we need this)
+\begin{align*}
+  p(z \le v) = p(\max\{x,y\} \le v) = p(x \le v) p(y \le v) = (1 - \exp(-\lambda_0 v))(1 - \exp(-\lambda_1 v)) \\
+  p(z) = \frac{d}{dv} p(z \le v) = \lambda_0 \exp(-\lambda_0 z)(1- \exp(-\lambda_1 z)) + \lambda_1 \exp(-\lambda_1 z)(1- \exp(-\lambda_0 z)).
+\end{align*}
+
+Can find
+\begin{align*}
+  E(x_i|z_i,u_i,\lambda_0^{(t)}, \lambda_1^{(t)}) = \begin{cases} z_i, \quad &\text{if } u_i = 1 \\ E(x_i|z_i,u_i = 0,\lambda_0^{(t)}, \lambda_1^{(t)})  \quad &\text{if } u_i = 0 \end{cases}.
+\end{align*}
+We can calculate
+\begin{align*}
+E(x_i|z_i,u_i = 0,\lambda_0^{(t)}, \lambda_1^{(t)}) &= E(x_i|x_i < y_i) \\
+&= \left(\int_0^{y_i} x_i \lambda_0^{(t)} \exp(-\lambda_0^{(t)}x_i)\right)\big/\left(\int_0^{y_i} x_i \lambda_0^{(t)} \exp(-\lambda_0^{(t)}x_i)\right) \\
+&= \frac{1- \exp(-\lambda_0^{(t)}y_i)(\lambda_0^{(t)}y_i + 1)}{\lambda_0^{(t)}(1- \exp(-\lambda_0^{(t)}y_i))}\\
+&= \frac{\exp(\lambda_0^{(t)}y_i) - (\lambda_0^{(t)}y_i + 1)}{\lambda_0^{(t)}(\exp(\lambda_0^{(t)}y_i) - 1)} \\
+&= \frac{1}{\lambda_0^{(t)}} - \frac{y_i}{\exp(\lambda_0^{(t)}y_i) - 1)} \\
+&= \frac{1}{\lambda_0^{(t)}} - \frac{z_i}{\exp(\lambda_0^{(t)}z_i) - 1)}.
+\end{align*}
+In the first step we calculate the weighted mass of our pdf for $x_i < y_i$, and we remember to divide by the mass of this area, in order to obtain the correct expectation. Furthermore, because $u_i = 0$, we know that $y_i = z_i$. We can use the same steps to calculate $E(y_i|z_i,u_i,\lambda_0^{(t)}, \lambda_1^{(t)})$, and we can write the expectations more compactly as
+\begin{align*}
+E(x_i|z_i,u_i,\lambda_0^{(t)}, \lambda_1^{(t)}) &= u_iz_i +(1-u_i)\left(\frac{1}{\lambda_0^{(t)}} - \frac{z_i}{\exp(\lambda_0^{(t)}z_i) - 1)}\right) \\
+E(y_i|z_i,u_i,\lambda_0^{(t)}, \lambda_1^{(t)}) &= (1-u_i)z_i +u_i\left(\frac{1}{\lambda_1^{(t)}} - \frac{z_i}{\exp(\lambda_1^{(t)}z_i) - 1)}\right).
+\end{align*}
+Thus, we can write the expectation of the log-likelihood as
+\begin{align*}
+E(\log f(x,y|\lambda_0,\lambda_1)|z,u,\lambda_0^{(t)},\lambda_1^{(t)}) = n(\log \lambda_0 + \log \lambda_1) &-\lambda_0 \sum_i^n u_iz_i +(1-u_i)\left(\frac{1}{\lambda_0^{(t)}} - \frac{z_i}{\exp(\lambda_0^{(t)}z_i) - 1)}\right)\\
+&- \lambda_1 \sum_i^n (1-u_i)z_i +u_i\left(\frac{1}{\lambda_1^{(t)}} - \frac{z_i}{\exp(\lambda_1^{(t)}z_i) - 1)}\right))
+\end{align*}
+
+## C.2
+
+Now that we have the loglikelihood we can use the EM-algorithm. The method is simple:
+\begin{itemize}
+\item Choose initial values $(\lambda_0^{(0)},\lambda_1^{(0)})$
+\item Maximize $E(\log f(x,y|\lambda_0,\lambda_1)|z,u,\lambda_0^{(t)},\lambda_1^{(t)})$ wrt to $(\lambda_0,\lambda_1)$, and choose this as $(\lambda_0^{(t+1)},\lambda_1^{(t+1)})$
+\item Iterate until convergence
+\end{itemize}
+The maximum can be found analytically by using the first order neccessary condition, that is, the gradient is zero (FIXME)
+\begin{align*}
+\nabla E(\log f(x,y|\lambda_0,\lambda_1)|z,u,\lambda_0^{(t)},\lambda_1^{(t)}) = 0 \\
+\implies \frac{n}{\lambda_0} - \sum_i^n u_iz_i +(1-u_i)\left(\frac{1}{\lambda_0^{(t)}} - \frac{z_i}{\exp(\lambda_0^{(t)}z_i) - 1)}\right) &= 0 \\
+\frac{n}{\lambda_1} - \sum_i^n u_iz_i +(1-u_i)\left(\frac{1}{\lambda_1^{(t)}} - \frac{z_i}{\exp(\lambda_1^{(t)}z_i) - 1)}\right) &= 0 \\
+\implies \lambda_0^{(t+1)} = \frac{n}{\sum_i^n u_iz_i +(1-u_i)\left(\frac{1}{\lambda_0^{(t)}} - \frac{z_i}{\exp(\lambda_0^{(t)}z_i) - 1)}\right)} \\
+\lambda_1^{(t+1)} = \frac{n}{\sum_i^n u_iz_i +(1-u_i)\left(\frac{1}{\lambda_1^{(t)}} - \frac{z_i}{\exp(\lambda_1^{(t)}z_i) - 1)}\right)}.
+\end{align*}
+Furthermore, we can use the second order sufficient condition, that is, the hessian is negative definite, to prove that this is indeed the maximal value
+\begin{align*}
+\nabla^2 E(\log f(x,y|\lambda_0,\lambda_1)|z,u,\lambda_0^{(t)},\lambda_1^{(t)}) = n \begin{bmatrix} -\frac{1}{\lambda_0} & 0 \\ 0 & -\frac{1}{\lambda_1} \end{bmatrix},
+\end{align*}
+which is obviously negative definite for positive $\lambda_0$ and $\lambda_1$, and we have found the maximizers of $E(\log f(x,y|\lambda_0,\lambda_1)|z,u,\lambda_0^{(t)},\lambda_1^{(t)})$.
+
+```{r}
+z = read.table('z.txt', header = FALSE, sep = "", dec = ".")
+u = read.table('u.txt', header = FALSE, sep = "", dec = ".")
+n = length(z[,])
+lambda_0_next <- function(lambda_0_prev){
+  sum = 0
+  for (i in 1:n){
+    if (u[i,] == 1){sum = sum + z[i,]}
+    else {sum = sum + 1.0/lambda_0_prev - z[i,]/(exp(lambda_0_prev * z[i,])-1)}
+  }
+  return(n/sum)
+}
+lambda_1_next <- function(lambda_1_prev){
+  sum = 0
+  for (i in 1:n){
+    if (u[i,] == 0){sum = sum + z[i,]}
+    else {sum = sum + 1.0/lambda_1_prev - z[i,]/(exp(lambda_1_prev * z[i,])-1)}
+  }
+  return(n/sum)
+}
+MAXITER = 10
+lambda_0_list = numeric(MAXITER)
+lambda_1_list = numeric(MAXITER)
+lambda_0 = 1.0
+lambda_1 = 1.0
+lambda_0_list[1] = lambda_0
+lambda_1_list[1] = lambda_1
+for (j in 1:(MAXITER-1)){
+    lambda_0_list[j+1] = lambda_0_next(lambda_0_list[j])
+    lambda_1_list[j+1] = lambda_1_next(lambda_1_list[j])
+}
+
+plot(lambda_1_list, type="b", main="", xlab = "Iterations", ylab="", col="red")
+lines(lambda_0_list, type="b", col="blue")
+```

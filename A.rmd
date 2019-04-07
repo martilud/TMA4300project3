@@ -1,0 +1,113 @@
+---
+title: "Problem A"
+author: "Sivert Selnes"
+date: "March 28, 2019"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+source("probAhelp.R")
+source("probAdata.R")
+```
+
+
+### 1)
+The residual bootstrap method relies on independent and identically distributed residuals to resample. Hence the carrying assumption is that our data origins from a process that is captured by the model, in this case a autoregressive process of second order. The computed rediduals will therefore by i.i.d. and appropriate to resample. The residual bootstrap method goes as following:
+
+* Estimate the AR(2) coefficients $\alpha_1$ and $\alpha_2$.
+
+* Define the innovations $\hat{e}_t = X_t - \hat{\alpha_1}X_{t-1} - \hat{\alpha_2}X_{t-2}$.
+
+* Ensure that the residuals have zero mean, $\hat{\epsilon}_t = \hat{e}_t - \bar{e}$.
+
+* Resample $n+1$ values from $\{\hat{\epsilon}_2, ..., \hat{\epsilon}_n \}$
+
+* Reconstruct a pseudo data series, $X_0^* = \epsilon_0^*, \quad X_t^* = \hat{\alpha_1}X_{t-1} + \hat{\alpha_2}X_{t-2} +\epsilon_t^*$
+
+
+```{r}
+ts = data3A$x # fetch time series
+n = length(ts)
+
+beta_estimate = ARp.beta.est(ts,2) # get AR(2) parameters estimates
+res_LS = ARp.resid(ts, beta_estimate$LS) # LS residuals for bootstrapping
+res_LA = ARp.resid(ts, beta_estimate$LA) # LA residuals for bootstrapping
+
+#mean(res_LS) # mean is zero; OK
+#mean(res_LA) # 
+
+B = 1500
+
+LS <- function(res, beta){
+  e_sample = sample(res, length(res), replace=T) # resample the residuals
+  init = sample(1:(n-1), 1, replace = T) # random intializing index for filtering
+  x0 = ts[init:(init+1)]
+  x_pseudo = ARp.filter(x0, beta, e_sample)
+  beta_boot = ARp.beta.est(x_pseudo,2)$LS
+  return(beta_boot)
+}
+
+LA <- function(res, beta){
+  e_sample = sample(res, length(res), replace=T) # resample the residuals
+  init = sample(1:(n-1), 1, replace = T) # random intializing index for filtering
+  x0 = ts[init:(init+1)]
+  x_pseudo = ARp.filter(x0, beta, e_sample)
+  beta_boot = ARp.beta.est(x_pseudo,2)$LA
+  return(beta_boot)
+}
+
+boot_LS = replicate(B,LS(res_LS, beta_estimate$LS))
+boot_LA = replicate(B,LA(res_LA, beta_estimate$LA))
+
+hist(boot_LS[2,], 30)
+
+
+# Bias and variance estimate
+
+bias_LS1 = mean(boot_LS[1,])-beta_estimate$LS[1]
+bias_LS2 = mean(boot_LS[2,])-beta_estimate$LS[2]
+
+bias_LA1 = mean(boot_LA[1,])-beta_estimate$LA[1]
+bias_LA2 = mean(boot_LA[2,])-beta_estimate$LA[2]
+
+var_LS1 = sum((boot_LS[1,]-beta_estimate$LS[1])^2)/B
+var_LS2 = sum((boot_LS[2,]-beta_estimate$LS[2])^2)/B
+
+var_LA1 = sum((boot_LA[1,]-beta_estimate$LA[1])^2)/B
+var_LA2 = sum((boot_LA[2,]-beta_estimate$LA[2])^2)/B
+
+
+##  Simulate x_101's distribution
+##  Choose beta_1, beta_2 from the bootstrap, choose a random residuals from the original 98 residuals.
+
+pred_new <- function(boot, residuals){
+  return(boot[1,]*ts[100] + boot[2,]*ts[99] + sample(residuals, B, replace=T))
+}
+
+x101_LA = pred_new(boot_LA,res_LA)
+x101_LS = pred_new(boot_LS,res_LS)
+
+
+hist(x101_LA, 30)
+hist(x101_LS, 30)
+
+quantiles_LA = quantile(x101_LA, c(0.025,0.975))
+quantiles_LS = quantile(x101_LS, c(0.025,0.975))
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

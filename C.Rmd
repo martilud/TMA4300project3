@@ -1,0 +1,163 @@
+---
+title: "C.Rmd"
+author: "Sivert Selnes"
+date: "April 2, 2019"
+output: pdf_document
+---
+
+\newcommand{\vect}[1]{\boldsymbol{\mathbf{#1}}}
+\newcommand{\matr}[1]{\boldsymbol{\mathbf{#1}}} 
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+u = as.logical(scan("u.txt")) 
+z = scan("z.txt")
+
+```
+
+
+# Problem C
+## 1.
+The log-likelihood function for the complete data $(x_i, y_i), i = 1,...,n$ is based on data points that are inaccessible directly, "latent", or in some way not observed. Given these, the log-likelihood can be maximized to yield the most likely distribution parameters. We known their respective distributions,
+
+$$
+\begin{aligned}
+x_i &\sim \exp(\lambda_0) = \lambda_1 e^{-y_i\lambda_1}, \\
+y_i &\sim \exp(\lambda_1) = \lambda_1 e^{-y_i\lambda_1}.
+\end{aligned}
+$$
+
+They are in addition indepentent of each other, which means the each data pair can be written as a product. Furthermore, the likelihood function of the joint distribution is just the product of each pair, since they are i.i.d.:
+
+$$
+\begin{aligned}
+(x_i, y_i) &\sim  \lambda_0 \lambda_1e^{-x_i\lambda_0}e^{-y_i\lambda_1}, \\
+f(\vect{x}, \vect{y}|\lambda_0, \lambda_1) &= \prod_{i=1}^n \lambda_0 \lambda_1e^{-x_i\lambda_0-y_i\lambda_1}, \\
+\ln f(\vect{x}, \vect{y})|\lambda_0, \lambda_1) &= n\ln(\lambda_0 \lambda_1)- \lambda_0 \sum_{i=1}^n  x_i -\lambda_1 \sum_{i=1}^n y_i.
+\end{aligned}
+$$
+
+If the latent variables $\vect{x},\vect{y}$ were observed and known, the parameter optimization would be easy to execute in the classical likelihood-manner: take the derivative of the log-likelihood (given the exact observations) with resepct to $\lambda_0$ and $\lambda_1$ and set to zero to find to maximum likelihood.
+
+The difference to this situation is that the data points to be used in the likelihood is not observed directly, but approximated. To approximate the data points $\vect{x}, \vect{y}$ needed to maximize the likelihood, we need (ironically) to use the parameters. These are of course not known either, since the whole point of giving exact data to the likelihood is to find the right parameters for the distribution.
+
+This is were the iterative EM-style comes into play. Since we need to know our data $\vect{x}, \vect{y}$ in order to maximize the parameters, and we need the parameters to obtain the best guess on the unobserved data, we do exactly that:
+
+* Approximate the expectations of $\vect{x}$ and $\vect{y}$ with the current parameter guess to maximize a likelihood that is as correct as possible.
+
+* Maximize the likelihood as normal, using the approximated values for the data and obtaining new maximized parameters.
+
+* Repeat the E- and M- steps to get increasingly better approximated data and hence increasingly better parameter estimates. 
+
+* Stop the algorithm when the new parameter guesses in the M-step and the parameters on which the data is based on is the E-step are coinciding/converged.
+
+To approximate the latent data in the E-step we are conditioning on the observed data and the current parameter values: 
+
+$$
+z_i = \text{max}(x_i,y_i) \quad \text{for} \quad i= 1,...,n
+$$
+$$
+u_i = \text{I}(x_i \geq y_i) \quad \text{for} \quad  i= 1,...,n.
+$$
+and 
+$$
+\hat{\lambda}_0 = \lambda_0^{(t)}, \quad \hat{\lambda}_1=\lambda_1^{(t)}. 
+$$
+
+By conditioning on $z_i$ and $u_i$ and assuming we know some (approximate) values for the parameters as well, $\lambda_0, \lambda_1$, we can compute the expected value of the resulting log-likelihood:
+
+$$
+\begin{aligned}
+\mathbb{E}[\ln f(\vect{x},\vect{y}|\vect{z},\vect{u},\lambda_0^{(t)}, \lambda_1^{(t)})] 
+&= n \ln(\lambda_0 \lambda_1) -\lambda_0\sum_{i=1}^n \mathbb{E}[ x_i] - \lambda_1\sum_{i=1}^n \mathbb{E} \big[ y_i\big]  \\
+\end{aligned}
+$$
+
+We rewrite $x_i$ and $y_i$ in terms of the variables we are conditioning on get the expectation. For each of the unobserved variables there are two cases: the first one is that the variable is the greater or equal to the other, in which case it is known and it is simply the max-value $z_i$ times the indicator function $u_i$ for $x_i$, or $1-u_i$ for $y_i$: 
+
+$$
+\mathbb{E}[x_i|u_i=1, z_i] = u_iz_i.
+$$
+
+The second case is where the latent variable in question is the smaller one. The expectation is taken of an exponential distribution, bounded above by the maximum variable and normalized to suit the given area, as follows:
+
+$$
+\begin{aligned}
+\mathbb{E}\big[x_i \big|u_i=0,z_i,\lambda_0^{(t)}, \lambda_1^{(t)}\big] &=  \mathbb{E} \bigg[\frac{\lambda_0e^{-x_i\lambda_0}} {\int_0^{z_i}\lambda_0e^{-x_i\lambda_0}\,dx_i}      \bigg] \\
+&=  \frac{\int_0^{z_i}x_i\lambda_0e^{-x_i\lambda_0}\,dx_i} 
+{1- e^{-z_i\lambda_0}}       \\
+&=\frac{\int_0^{z_i}x_i\lambda_0e^{-x_i\lambda_0}\,dx_i} 
+{1- e^{-z_i\lambda_0}}      
+\end{aligned}
+$$
+
+The integral is easily evaluated using integration by parts:
+
+$$
+\begin{aligned}
+ \int_0^{z_i} \lambda_0x_ie^{-x_i\lambda_0}\,dx_i &= -x_ie^{-\lambda_0x_i} \bigg|_0^{z_i} -  \int_0^{z_i} \lambda_0e^{-x_i\lambda_0}\,dx_i \\
+ &= -z_ie^{-\lambda_0x_i} + e^{-\lambda_0z_i} -1 \\
+ &= e^{-\lambda_0z_i}(1-z_i) -1.
+\end{aligned}
+$$
+ 
+ Substituting into the expectation for $x_i | u_i=0$ we get
+ 
+ 
+$$
+\begin{aligned}
+\mathbb{E}\big[x_i \big|u_i=0,z_i,\lambda_0^{(t)}, \lambda_1^{(t)}\big] &= \frac{\int_0^{z_i}x_i\lambda_0e^{-x_i\lambda_0}\,dx_i} 
+{1- e^{-z_i\lambda_0}} \\
+&=\frac{e^{-\lambda_0z_i}(1-z_i) -1} {1- e^{-z_i\lambda_0}} \\ 
+\end{aligned}
+$$
+
+Hence the full expectations for $x_i$ and $y_i$ are
+
+$$
+\begin{aligned}
+\mathbb{E}[\ln f(\vect{x},\vect{y}|\vect{z},\vect{u},\lambda_0^t, \lambda_1^t)]
+&= n \ln(\lambda_0 \lambda_1)  -\lambda_0\sum_{i=1}^n \mathbb{E}[ x_i] - \lambda_1\sum_{i=1}^n \mathbb{E} \big[ y_i\big]   \\
+&=  n(\ln\lambda_0 + \ln \lambda_1) -\lambda_0\sum_{i=1}^n \bigg[ \mathbb{E}[x_i|x_i \geq y_i] +  \mathbb{E}[x_i|x_i<y_i] \bigg] - \lambda_1\sum_{i=1}^n \bigg[ \mathbb{E}[y_i>x_i] + \mathbb{E}[y_i|y_i \leq x_i] \bigg]  \\
+&= n(\ln\lambda_0 + \ln \lambda_1) -\lambda_0\sum_{i=1}^n  \bigg[ u_iz_i +  (1-u_i)\frac{e^{-\lambda_0^{(t)}z_i}(1-z_i) -1} {1- e^{-z_i\lambda_0^{(t)}}} \bigg] \\
+& - \lambda_1\sum_{i=1}^n \bigg[ (1-u_i)z_i + u_i \frac{e^{-\lambda_0^{(t)}z_i}(1-z_i) -1} {1- e^{-z_i\lambda_0^{(t)}}} \bigg].  \\
+\end{aligned}
+$$
+This is the best log-likelihood we have available for a given parameter guess $\hat{\lambda}_0 = \lambda_0^{(t)}, \quad \hat{\lambda}_1=\lambda_1^{(t)}$. We carry on with the standard procedure for maximizing the likelihood; taking the derivative with respect to the parameters and setting the resulting expression to zero.
+
+
+
+
+$$
+\begin{aligned}
+\frac{Q(\vect{\lambda}|\vect{\lambda^{(t)}})}{\partial \lambda_0} &= \frac{n}{\lambda_0} - \sum_{i=1}^n  \bigg[ u_iz_i +  (1-u_i)\frac{e^{-\lambda_0^{(t)}z_i}(1-z_i) -1} {1- e^{-z_i\lambda_0^{(t)}}} \bigg], \\
+\frac{Q(\vect{\lambda}|\vect{\lambda^{(t)}})}{\partial \lambda_1} &= \frac{n}{\lambda_1} -\sum_{i=1}^n \bigg[ (1-u_i)z_i + u_i \frac{e^{-\lambda_0^{(t)}z_i}(1-z_i) -1} {1- e^{-z_i\lambda_0^{(t)}}} \bigg], \\
+&\Updownarrow \\
+\lambda^{(t+1)}_0 &= \frac{n}{\sum_{i=1}^n  \bigg[ u_iz_i +  (1-u_i)\frac{e^{-\lambda_0^{(t)}z_i}(1-z_i) -1} {1- e^{-z_i\lambda_0^{(t)}}} \bigg]}, \\
+\lambda^{(t+1)}_1 &= \frac{n}{\sum_{i=1}^n \bigg[ (1-u_i)z_i + u_i \frac{e^{-\lambda_0^{(t)}z_i}(1-z_i) -1} {1- e^{-z_i\lambda_0^{(t)}}} \bigg]}.
+\end{aligned}
+$$
+
+
+## 2.
+
+```{r, eval=F}
+tol = 10
+lambda0 = 1
+lambda1 = 1
+n = length(u)
+
+while (tol > 1e-6){
+  temp0 = sum((1/lambda0) - z[!u]/expm1(lambda0*z[!u]))
+  temp1 = sum((1/lambda1) - z[u]/expm1(lambda1*z[u]))
+  new_lambda0 = n/(sum(z[u]) + temp0)
+  new_lambda1 = n/(sum(z[!u])  + temp1)
+  tol = sqrt((new_lambda0-lambda0)^2 + (new_lambda1-lambda1)^2 )
+  
+  lambda0 = new_lambda0
+  lambda1 = new_lambda1
+
+}
+
+```
+

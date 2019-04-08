@@ -141,7 +141,7 @@ $$
 
 ## 2.
 
-```{r, eval=F}
+```{r}
 tol = 10
 lambda0 = 1
 lambda1 = 1
@@ -156,7 +156,6 @@ while (tol > 1e-6){
   
   lambda0 = new_lambda0
   lambda1 = new_lambda1
-
 }
 
 ```

@@ -13,15 +13,17 @@ source("probAdata.R")
 
 
 ### 1)
-The residual bootstrap method relies on independent and identically distributed residuals to resample. Hence the carrying assumption is that our data origins from a process that is captured by the model, in this case a autoregressive process of second order. The computed rediduals will therefore by i.i.d. and appropriate to resample. The residual bootstrap method goes as following:
+The bootstrap method in genereal relies on independent and identically distributed samples to resample (if they were correlated they would of course not show the same properties if we reordered them randomly). For data that origins from a time series or some sort of regression problem, that is an issue, since the very core of the time series- and regression problem is to predict the response given some covariate. That implies, nesseccerily, some relationship (correlation) between predictions with similar covariates, i.e. close in time or space. 
 
-* Estimate the AR(2) coefficients $\alpha_1$ and $\alpha_2$.
+If the chosen model is the appropriate one, however, it should capture all dependencies in the model and the deviations from the models are (ideally) uncorrelated white noise not useful for predictions. These residuals, given that our model is correct, is ideal to bootstrap to get an estimate of the variability and bias of the model parameters. In this case the carrying assumption is that our data origins from an autoregressive process of second order. The residual bootstrap method goes as following:
 
-* Define the innovations $\hat{e}_t = X_t - \hat{\alpha_1}X_{t-1} - \hat{\alpha_2}X_{t-2}$.
+* \textbf{Estimate the AR(2) coefficients $\alpha_1$ and $\alpha_2$.}
 
-* Ensure that the residuals have zero mean, $\hat{\epsilon}_t = \hat{e}_t - \bar{e}$.
+* \textbf{Define the innovations $\hat{e}_t = X_t - \hat{\alpha_1}X_{t-1} - \hat{\alpha_2}X_{t-2}$.}
 
-* Resample $n+1$ values from $\{\hat{\epsilon}_2, ..., \hat{\epsilon}_n \}$
+* \textbf{Ensure that the residuals have zero mean, $\hat{\epsilon}_t = \hat{e}_t - \bar{e}$.}
+
+* \textbf{Resample $n+1$ values from $\{\hat{\epsilon}_2, ..., \hat{\epsilon}_n \}$}
 
 * Reconstruct a pseudo data series, $X_0^* = \epsilon_0^*, \quad X_t^* = \hat{\alpha_1}X_{t-1} + \hat{\alpha_2}X_{t-2} +\epsilon_t^*$
 

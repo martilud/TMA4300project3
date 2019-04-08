@@ -12,10 +12,10 @@ source("probAdata.R")
 ```
 
 
-### 1)
-The bootstrap method in genereal relies on independent and identically distributed samples to resample (if they were correlated they would of course not show the same properties if we reordered them randomly). For data that origins from a time series or some sort of regression problem, that is an issue, since the very core of the time series- and regression problem is to predict the response given some covariate. That implies, nesseccerily, some relationship (correlation) between predictions with similar covariates, i.e. close in time or space. 
+## 1)
+The bootstrap method in genereal relies on independently and identically distributed samples to resample (if they were correlated they would of course not show the same properties after random reordering). For data that origins from time series or regression problems that is an issue, since the very core of the time series and regression is to predict the response given the covariate(s), hence some correlation must take place. That implies, nesseccerily, some relationship between the responses of similar covariates that are close in time or space. 
 
-If the chosen model is the appropriate one, however, it should capture all dependencies in the model and the deviations from the models are (ideally) uncorrelated white noise not useful for predictions. These residuals, given that our model is correct, is ideal to bootstrap to get an estimate of the variability and bias of the model parameters. In this case the carrying assumption is that our data origins from an autoregressive process of second order. The residual bootstrap method goes as following:
+If the chosen model is the appropriate one, however, it should capture all dependencies in the model and the deviations from the models are (ideally) uncorrelated white noise, not useful for predictions. Hence, these residuals can be bootstrapped to get an estimate of the variability and bias of the model parameters. In this particular exercise the carrying assumption is that our data origins from an autoregressive process of second order. The residual bootstrap method then goes as follows:
 
 * \textbf{Estimate the AR(2) coefficients $\alpha_1$ and $\alpha_2$.}
 
@@ -23,10 +23,11 @@ If the chosen model is the appropriate one, however, it should capture all depen
 
 * \textbf{Ensure that the residuals have zero mean, $\hat{\epsilon}_t = \hat{e}_t - \bar{e}$.}
 
-* \textbf{Resample $n+1$ values from $\{\hat{\epsilon}_2, ..., \hat{\epsilon}_n \}$}
+* \textbf{Resample $n+1$ values from the (iid) residuals $\{\hat{\epsilon}_2, ..., \hat{\epsilon}_n \}$.}
 
-* Reconstruct a pseudo data series, $X_0^* = \epsilon_0^*, \quad X_t^* = \hat{\alpha_1}X_{t-1} + \hat{\alpha_2}X_{t-2} +\epsilon_t^*$
+* \textbf{Reconstruct a pseudo data series with the resampled residuals, $X_0^* = \epsilon_0^*, \quad X_t^* = \hat{\alpha_1}X_{t-1} + \hat{\alpha_2}X_{t-2} +\epsilon_t^*$.}
 
+* \textbf{Estimate new coefficients $\alpha_1$ and $\alpha_2$ for each pseudo data series to get an idea of the parameter variance and bias (which can be calculated by the plug-in estimator.)}
 
 ```{r}
 ts = data3A$x # fetch time series
@@ -62,40 +63,47 @@ LA <- function(res, beta){
 boot_LS = replicate(B,LS(res_LS, beta_estimate$LS))
 boot_LA = replicate(B,LA(res_LA, beta_estimate$LA))
 
-hist(boot_LS[2,], 30)
+```
 
+The bootstrap bias and bootstrap variance are easiliy computed by subtracting the $\beta$-estimate from the bootstrap mean, and taking the sum of squares for the variance, respectively. 
 
+```{r}
 # Bias and variance estimate
 
-bias_LS1 = mean(boot_LS[1,])-beta_estimate$LS[1]
-bias_LS2 = mean(boot_LS[2,])-beta_estimate$LS[2]
+mean(boot_LS[1,])-beta_estimate$LS[1] # bias of beta1, LS-method
+mean(boot_LS[2,])-beta_estimate$LS[2] # bias of beta2, LS-method
 
-bias_LA1 = mean(boot_LA[1,])-beta_estimate$LA[1]
-bias_LA2 = mean(boot_LA[2,])-beta_estimate$LA[2]
+mean(boot_LA[1,])-beta_estimate$LA[1] # bias of beta1, LA-method
+mean(boot_LA[2,])-beta_estimate$LA[2] # bias for beta2, LA-method
 
-var_LS1 = sum((boot_LS[1,]-beta_estimate$LS[1])^2)/B
-var_LS2 = sum((boot_LS[2,]-beta_estimate$LS[2])^2)/B
+sum((boot_LS[1,]-beta_estimate$LS[1])^2)/B # variance of beta1, LS-method
+sum((boot_LS[2,]-beta_estimate$LS[2])^2)/B # variance of beta2, LS-method
 
-var_LA1 = sum((boot_LA[1,]-beta_estimate$LA[1])^2)/B
-var_LA2 = sum((boot_LA[2,]-beta_estimate$LA[2])^2)/B
+sum((boot_LA[1,]-beta_estimate$LA[1])^2)/B # variance of beta1, LA-method
+sum((boot_LA[2,]-beta_estimate$LA[2])^2)/B # variance for beta2, LA-method
+```
 
+Both variance and bias are considerably lower for the estimator computed with absolute residuals than for the squared residuals. For this problem then, the absolute residuals method give the better estimates.
 
-##  Simulate x_101's distribution
-##  Choose beta_1, beta_2 from the bootstrap, choose a random residuals from the original 98 residuals.
+## 2.
+We predict the next value $x_{101}$ by using every pair of bootstrapped parameter values and a randomly chosen residual to generate an innovation. This gives an empirical distribution containing $B$ predictions of $x_{101}$. To construct an estimated 95 \% confidence interval we choose the $\alpha_{2.5}$ and the $\alpha_{97.5}$-quantiles in the empirical distribution.
 
+```{r, fig.cap="Histogram of bootstrapped one-step prediction and 0.025/0.975 quantiles in red."}
 pred_new <- function(boot, residuals){
-  return(boot[1,]*ts[100] + boot[2,]*ts[99] + sample(residuals, B, replace=T))
+  return(boot[1,]*ts[100] + boot[2,]*ts[99] + sample(residuals, B, replace=T)) # Choose beta_1, beta_2 from the bootstrap, choose a random residuals from the original 98 residuals.
 }
 
 x101_LA = pred_new(boot_LA,res_LA)
 x101_LS = pred_new(boot_LS,res_LS)
+quantile(x101_LA, c(0.025,0.975))
+quantile(x101_LS, c(0.025,0.975))
 
+hist(x101_LA, 30, xlab = "One-step prediction", ylab = "Frequency", xlim=c(2,30), main = "Bootstrapped innovation")
+abline(v = quantile(x101_LA, c(0.025,0.975))
+, col=2, lwd=3)
 
-hist(x101_LA, 30)
-hist(x101_LS, 30)
-
-quantiles_LA = quantile(x101_LA, c(0.025,0.975))
-quantiles_LS = quantile(x101_LS, c(0.025,0.975))
+hist(x101_LS, 30, xlab = "One-step prediction", ylab = "Frequency")
+abline(v = quantile(x101_LS, c(0.025,0.975)),col=2, lwd=3)
 ```
 
 

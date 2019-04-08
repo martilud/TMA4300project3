@@ -11,12 +11,27 @@ library(data.table)
 ```
 
 ## B
+In this task we have labeled measured data of three different individuals. A box plot of the data is shown in figure \ref{fig:bili}.
 
-
-```{r}
-set.seed(314)
+```{r, include=FALSE, fig.cap="\\label{fig:bili} Box plot of bilirubin data. At first glance, it looks like person 3 has a higher bilirubin concentration than the two others."}
 bilirubin <- read.table("bilirubin.txt",header=T)
 boxplot(log(meas)~pers, data = bilirubin, main = "Logratihm of concentrations")
+```
+
+
+We want to fit a linear model
+$$ \log Y_{ij} = \beta_i + \varepsilon_{ij}$$,
+and test
+\begin{equation}
+  H_0: \beta_0 = \beta_1 = \beta_2, \quad H_1: \text{At least one } \beta_i \text{   different from the others}.
+\end{equation}
+Under the null hypothesis, the data should be iid, meaning that labels should not matter. This is the idea of a permutation test. If the null hypothesis is correct, changing labels should not matter.
+
+In the permutation test, we create a permuted dataset $\mathbf{x}^\ast$, from our original dataset $\mathbf{x}$, and calculate our test statistic $t(\mathbf{x}^\ast)$. We do this $B$ times, and the p-value can then be approximated by $\frac{1}{B}$ times the number of statistics satisfying $t(\mathbf{x}^\ast) \ge t(\mathbf{x})$. In other words, we approximate the probability of obtaining a test statistic ast least as extreme as the "original" test statistic $t(\mathbf{x})$.
+
+```{r, fig.cap="Box plot of bilirubin data"}
+set.seed(314)
+
 linearmodel = lm(log(meas)~pers, data = bilirubin)
 Fval = summary(linearmodel)$fstatistic[1] # Value of F-statistic
 Fval
@@ -27,6 +42,11 @@ permTest <- function(){
   linearmodel = lm(log(meas)~pers, data = permbilirubin)
   return(summary(linearmodel)$fstatistic[1])
 }
+```
+Fitting the linear regression on the original dataset gives a p-value of $0.03946$, rather significant. Results from running the permutation test with $B=999$ is shown in figure \ref{fig:perm}. re more useful when trying to obtain a p-value when you do not know the distribution.
+
+
+```{r, include=FALSE, fig.cap="\\label{fig:perm} Result from running the permutation test"}
 B = 999
 results = replicate(B,permTest())
 hist(results, freq=F, breaks=50)
@@ -35,11 +55,13 @@ pdf = sapply(x,df,2,26)
 lines(x,pdf)
 abline(v = Fval, col = "red")
 newp = length(which(results >= Fval))/B
+"Permutation test p-value:"
 newp
 abline(v = qf(1-newp, 2,26), col= "blue")
-#legend("upperright", legend= c("old F value", "new F value"))
+legend("topright", legend= c("Original F value", "Permutation test F value"), col=c("red","blue"), lty=c(1,1))
 ```
 
+We see that the statistics obtained by permutation nicely fit the distribution they come from. Furthermore, the new p-value is very similar to the old one, and approaches the original one nicely for large $B$. In this case, we know the distribution under the null hypothesis, and therefore the correct p-value. Permutation tests are more useful to approximate p-values when we do not know the null hypothesis distribution. Here we have essentially shown that we can use a permutation test in this case, and it nicely approximates the p-value it is supposed to approximate.
 
 ## C.1
 $x$ and $y$ are exponentially distributed, and they are dependent. We can therefore write the likelihood:
@@ -160,7 +182,7 @@ The EM-algorithm gives us estimates $(\hat{\lambda}_0, \hat{\lambda}_1)$, but sa
 \end{itemize}
 
 ```{r}
-B = 10000 # Number of bootstrap samples
+B = 1000 # Number of bootstrap samples
 lambda_0_strapped = numeric(B)
 lambda_1_strapped = numeric(B)
 lambda_0_init = 1.0

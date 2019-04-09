@@ -7,12 +7,13 @@ output: pdf_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+library(latex2exp)
 source("probAhelp.R")
 source("probAdata.R")
 ```
 
 
-## 1)
+## A.1
 The bootstrap method in genereal relies on independently and identically distributed samples to resample (if they were correlated they would of course not show the same properties after random reordering). For data that origins from time series or regression problems that is an issue, since the very core of the time series and regression is to predict the response given the covariate(s), hence some correlation must take place. That implies, nesseccerily, some relationship between the responses of similar covariates that are close in time or space. 
 
 If the chosen model is the appropriate one, however, it should capture all dependencies in the model and the deviations from the models are (ideally) uncorrelated white noise, not useful for predictions. Hence, these residuals can be bootstrapped to get an estimate of the variability and bias of the model parameters. In this particular exercise the carrying assumption is that our data origins from an autoregressive process of second order. The residual bootstrap method then goes as follows:
@@ -29,34 +30,39 @@ If the chosen model is the appropriate one, however, it should capture all depen
 
 * \textbf{Estimate new coefficients $\alpha_1$ and $\alpha_2$ for each pseudo data series to get an idea of the parameter variance and bias (which can be calculated by the plug-in estimator.)}
 
+
+
+
 ```{r}
-ts = data3A$x # fetch time series
+# Bootstrapping the AR(2)-model
+
+ts = data3A$x
 n = length(ts)
 
 beta_estimate = ARp.beta.est(ts,2) # get AR(2) parameters estimates
-res_LS = ARp.resid(ts, beta_estimate$LS) # LS residuals for bootstrapping
-res_LA = ARp.resid(ts, beta_estimate$LA) # LA residuals for bootstrapping
+res_LS = ARp.resid(ts, beta_estimate$LS) # LS residuals
+res_LA = ARp.resid(ts, beta_estimate$LA) # LA residuals
 
-#mean(res_LS) # mean is zero; OK
+#mean(res_LS) # mean is zero - OK
 #mean(res_LA) # 
 
 B = 1500
 
 LS <- function(res, beta){
-  e_sample = sample(res, length(res), replace=T) # resample the residuals
-  init = sample(1:(n-1), 1, replace = T) # random intializing index for filtering
+  e_sample = sample(res, length(res), replace=T) # resample residuals
+  init = sample(1:(n-1), 1, replace = T) # random intializing index
   x0 = ts[init:(init+1)]
-  x_pseudo = ARp.filter(x0, beta, e_sample)
-  beta_boot = ARp.beta.est(x_pseudo,2)$LS
+  x_pseudo = ARp.filter(x0, beta, e_sample) # generate pseudo time series
+  beta_boot = ARp.beta.est(x_pseudo,2)$LS # get coefficients
   return(beta_boot)
 }
 
 LA <- function(res, beta){
-  e_sample = sample(res, length(res), replace=T) # resample the residuals
-  init = sample(1:(n-1), 1, replace = T) # random intializing index for filtering
+  e_sample = sample(res, length(res), replace=T) # resample
+  init = sample(1:(n-1), 1, replace = T) # random intializing index
   x0 = ts[init:(init+1)]
-  x_pseudo = ARp.filter(x0, beta, e_sample)
-  beta_boot = ARp.beta.est(x_pseudo,2)$LA
+  x_pseudo = ARp.filter(x0, beta, e_sample) # generate pseudo time series
+  beta_boot = ARp.beta.est(x_pseudo,2)$LA # get coefficient
   return(beta_boot)
 }
 
@@ -83,14 +89,14 @@ sum((boot_LA[1,]-beta_estimate$LA[1])^2)/B # variance of beta1, LA-method
 sum((boot_LA[2,]-beta_estimate$LA[2])^2)/B # variance for beta2, LA-method
 ```
 
-Both variance and bias are considerably lower for the estimator computed with absolute residuals than for the squared residuals. For this problem then, the absolute residuals method give the better estimates.
+Both variance and bias are considerably lower for the estimator computed with absolute residuals than for the squared residuals. Thus, for this problem the absolute residuals method give the better estimates.
 
-## 2.
-We predict the next value $x_{101}$ by using every pair of bootstrapped parameter values and a randomly chosen residual to generate an innovation. This gives an empirical distribution containing $B$ predictions of $x_{101}$. To construct an estimated 95 \% confidence interval we choose the $\alpha_{2.5}$ and the $\alpha_{97.5}$-quantiles in the empirical distribution.
+## A.2
+We predict the next value in the time series, $x_{101}$, by using every pair of bootstrapped parameter values and a randomly chosen residual to generate the innovations that yields the empirical distribution. After the bootstrapping of the parameters, the distribution contains $B$ predictions of $x_{101}$. To construct an estimated 95 \% confidence interval we choose the $\alpha_{2.5}$ and the $\alpha_{97.5}$-quantiles in the empirical distribution.
 
-```{r, fig.cap="Histogram of bootstrapped one-step prediction and 0.025/0.975 quantiles in red."}
+```{r, fig.cap="Histogram of bootstrapped one-step predictions and the 0.025 and 0.975 quantiles."}
 pred_new <- function(boot, residuals){
-  return(boot[1,]*ts[100] + boot[2,]*ts[99] + sample(residuals, B, replace=T)) # Choose beta_1, beta_2 from the bootstrap, choose a random residuals from the original 98 residuals.
+  return(boot[1,]*ts[100] + boot[2,]*ts[99] + sample(residuals, B, replace=T))
 }
 
 x101_LA = pred_new(boot_LA,res_LA)
@@ -98,12 +104,12 @@ x101_LS = pred_new(boot_LS,res_LS)
 quantile(x101_LA, c(0.025,0.975))
 quantile(x101_LS, c(0.025,0.975))
 
-hist(x101_LA, 30, xlab = "One-step prediction", ylab = "Frequency", xlim=c(2,30), main = "Bootstrapped innovation")
+hist(x101_LA, 30, xlab = "Simulated x_101", ylab = "Frequency",  main = "One-step predictions")
 abline(v = quantile(x101_LA, c(0.025,0.975))
-, col=2, lwd=3)
+, col=1, lwd=2)
 
-hist(x101_LS, 30, xlab = "One-step prediction", ylab = "Frequency")
-abline(v = quantile(x101_LS, c(0.025,0.975)),col=2, lwd=3)
+hist(x101_LS, 30, xlab = "Simulated x_101", ylab = "Frequency",  main = "One-step predictions")
+abline(v = quantile(x101_LS, c(0.025,0.975)),col=1, lwd=2)
 ```
 
 

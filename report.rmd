@@ -1,6 +1,6 @@
 ---
 title: "TMA4300 Project 3"
-author: "Martin og Sivert"
+author: "Martin Ludvigsen & Sivert Selnes"
 date: "April 9, 2019"
 output: pdf_document
 ---
@@ -16,20 +16,20 @@ source("probAdata.R")
 ```
 
 
-# A.1
+## A.1
 The bootstrap method in genereal relies on independently and identically distributed samples to resample (if they were correlated they would of course not show the same properties after random reordering). For data that origins from time series or regression problems that is an issue, since the very core of the time series and regression is to predict the response given the covariate(s), hence some correlation must take place. That implies, nesseccerily, some relationship between the responses of similar covariates that are close in time or space. 
 
 If the chosen model is the appropriate one, however, it should capture all dependencies in the model and the deviations from the models are (ideally) uncorrelated white noise, not useful for predictions. Hence, these residuals can be bootstrapped to get an estimate of the variability and bias of the model parameters. In this particular exercise the carrying assumption is that our data origins from an autoregressive process of second order. The residual bootstrap method then goes as follows:
 
 * Estimate the AR(2) coefficients $\alpha_1$ and $\alpha_2$.
 
-* Define the innovations $\hat{e}_t = X_t - \hat{\alpha_1}X_{t-1} - \hat{\alpha_2}X_{t-2}$.
+* Define the innovations $\hat{e}_t = X_t - \hat{\alpha}_1 X_{t-1} - \hat{\alpha}_2 X_{t-2}$.
 
 * Ensure that the residuals have zero mean, $\hat{\epsilon}_t = \hat{e}_t - \bar{e}$.
 
 * Resample $n+1$ values from the (iid) residuals $\{\hat{\epsilon}_2, ..., \hat{\epsilon}_n \}$.
 
-* Reconstruct a pseudo data series with the resampled residuals, $X_0^* = \epsilon_0^*, \quad X_t^* = \hat{\alpha_1}X_{t-1} + \hat{\alpha_2}X_{t-2} +\epsilon_t^*$.
+* Reconstruct a pseudo data series with the resampled residuals, $X_0^* = \epsilon_0^*, \quad X_t^* = \hat{\alpha}_1X_{t-1} + \hat{\alpha}_2X_{t-2} +\epsilon_t^*$.
 
 * Estimate new coefficients $\alpha_1$ and $\alpha_2$ for each pseudo data series to get an idea of the parameter variance and bias (which can be calculated by the plug-in estimator.)
 
@@ -74,26 +74,27 @@ boot_LA = replicate(B,LA(res_LA, beta_estimate$LA))
 
 ```
 
-The bootstrap bias and bootstrap variance are easiliy computed by subtracting the $\beta$-estimate from the bootstrap mean, and taking the sum of squares for the variance, respectively. 
 
-```{r}
-# Bias and variance estimate
+
+```{r, collapse=T}
+# Bias estimates
 
 mean(boot_LS[1,])-beta_estimate$LS[1] # bias of beta1, LS-method
 mean(boot_LS[2,])-beta_estimate$LS[2] # bias of beta2, LS-method
-
 mean(boot_LA[1,])-beta_estimate$LA[1] # bias of beta1, LA-method
 mean(boot_LA[2,])-beta_estimate$LA[2] # bias for beta2, LA-method
 
+# Variances estimates
+
 sum((boot_LS[1,]-beta_estimate$LS[1])^2)/B # variance of beta1, LS-method
 sum((boot_LS[2,]-beta_estimate$LS[2])^2)/B # variance of beta2, LS-method
-
 sum((boot_LA[1,]-beta_estimate$LA[1])^2)/B # variance of beta1, LA-method
 sum((boot_LA[2,]-beta_estimate$LA[2])^2)/B # variance for beta2, LA-method
 ```
+The bootstrap bias and bootstrap variance are easiliy computed by subtracting the $\beta$-estimate from the bootstrap mean, and taking the sum of squares for the variance, respectively. 
+\textbf{Both variance and bias are considerably lower for the estimators computed by least absolute residuals than for the least squared residuals.} Thus, for this problem the absolute residuals method give the better estimates.
 
-Both variance and bias are considerably lower for the estimator computed with absolute residuals than for the squared residuals. Thus, for this problem the absolute residuals method give the better estimates.
-
+\newpage
 ## A.2
 We predict the next value in the time series, $x_{101}$, by using every pair of bootstrapped parameter values and a randomly chosen residual to generate the innovations that yields the empirical distribution. After the bootstrapping of the parameters, the distribution contains $B$ predictions of $x_{101}$. To construct an estimated 95 \% confidence interval we choose the $\alpha_{2.5}$ and the $\alpha_{97.5}$-quantiles in the empirical distribution.
 
@@ -116,8 +117,8 @@ abline(v = quantile(x101_LS, c(0.025,0.975)),col=1, lwd=2)
 ```
 
 
-
-## B
+\newpage
+## B.1, B.2, B.3
 In this task we have labeled measured data of three different individuals. A box plot of the data is shown in figure \ref{fig:bili}.
 
 ```{r, echo=FALSE, fig.cap="\\label{fig:bili} Box plot of bilirubin data. At first glance, it looks like person 3 has a higher bilirubin concentration than the two others."}
@@ -170,6 +171,7 @@ legend("topright", legend= c("Original F value", "Permutation test F value"), co
 
 We see that the statistics obtained by permutation nicely fit the distribution they come from. Furthermore, the new p-value is very similar to the old one, and approaches the original one nicely for large $B$. In this case, we know the distribution under the null hypothesis, and therefore the correct p-value. Permutation tests are more useful to approximate p-values when we do not know the null hypothesis distribution. Here we have essentially shown that we can use a permutation test in this case, and it nicely approximates the p-value it is supposed to approximate.
 
+\newpage
 ## C.1
 
 The log-likelihood function for the complete data $(x_i, y_i), i = 1,...,n$ is based on data points that are inaccessible directly, "latent", or in some way not observed. Given these, the log-likelihood can be maximized to yield the most likely distribution parameters. We known their respective distributions,
